@@ -1,5 +1,5 @@
 /**
- * Java program that graphs the grades and their averages of the students,
+ * Java program that graphs the grades and their averages of the students through StdDraw library (stdlib.jar),
  * provided some text file in the format of grades.txt
  *
  * @author ustunyilmaz
