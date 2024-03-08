@@ -1,7 +1,7 @@
 /**
  * @author ustunyilmaz
- * @version 1.0.0,
- * Java code that simulates a hypothetical 'Flappy Bird' like game
+ * @version 1.0.0
+ * Java code that simulates a hypothetical 'Flappy Bird' like game using StdDraw library (stdlib.jar)
  */
 
 import java.awt.*;
