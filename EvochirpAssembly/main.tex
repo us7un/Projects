@@ -1,0 +1,437 @@
+% ATTENTION: FOR THE EMOJIS TO WORK, PLEASE USE LUALATEX COMPILER!!! ~üstün 
+\documentclass[a4paper,12pt]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{emoji}
+
+
+\lstdefinelanguage{ATnT}{
+  sensitive=true,
+  morecomment=[l]{\#},
+  morestring=[b]",
+  morekeywords={
+    movb,movw,movl,movq,movzbq,
+    addb,addw,addl,addq,
+    subb,subw,subl,subq,
+    incb,incw,incl,incq,
+    decb,decw,decb,decq,
+    leab,leaw,leal,leaq,
+    cmpb,cmpw,cmpl,cmpq,
+    pushq,popq,
+    xorw,xorb,xorl,xorq,
+    orw,orb,orl,orq,
+    andw,andb,andl,andq,
+    notb,notw,notl,notq,
+    shlb,shlw,shll,shlq,
+    shrb,shrw,shrl,shrq,
+    rolb,rolw,roll,rolq,
+    rorb,rorw,rorl,rorq,
+    jmp,je,jne,ja,jae,jb,jbe,jg,jge,jl,jle,
+    call,ret,int,nop       
+  },
+  morekeywords=[2]{
+    .section,.text,.data,.global,.extern,
+    .byte,.word,.long,.quad,.align,
+    .ascii,.asciz,.bss
+  },
+  morekeywords=[3]{
+    rip,rax,rbx,rcx,rdx,rsi,rdi,rbp,rsp,
+    r8,r9,r10,r11,r12,r13,r14,r15,
+    eax,ebx,ecx,edx,esi,edi,ebp,esp,
+    r8d,r9d,r10d,r11d,r12d,r13d,r14d,r15d,
+    ax,bx,cx,dx,si,di,bp,sp,
+    r8w,r9w,r10w,r11w,r12w,r13w,r14w,r15w,
+    al,bl,cl,dl,ah,bh,ch,dh,
+    r8b,r9b,r10b,r11b,r12b,r13b,r14b,r15b
+  }
+}
+
+\lstdefinestyle{ATnTStyle}{
+    language=ATnT,
+    basicstyle=\ttfamily\footnotesize,
+    keywordstyle=\color{blue},        
+    keywordstyle=[2]\color{cyan},     
+    keywordstyle=[3]\color{blue},    
+    commentstyle=\color{violet},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny,
+    stepnumber=1,
+    breaklines=true,
+    frame=single
+}
+
+\title{Project Report - Evochirp\emoji{bird}   \\ \large Systems Programming – Spring 2025}
+\author{Üstün Yılmaz, 2023400108 
+\\ Department of Computer Engineering \\ Boğaziçi University
+}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document is about a project given as an assignment in the CMPE230 course of Boğaziçi University, called Evochirp. It has an introduction about what the project entails and what problems are encountered and solved during the implementation process. It also delves into what methodology was used in the implementation of the project and the consequences of that methodology.
+\end{abstract}
+
+\section{Introduction}
+The project is about implementing three different interpreters which have four common operations. Each interpreter handles these operations differently and has a unique way of expressing its output. These interpreters represent birds in real life, and they behave like these birds, having their own songs and the evolution patterns corresponding to each operation, hence the name Evochirp.
+
+\section{Problem Description}
+The main problem in this project is to implement it using Assembly language, x86-64 GAS AT\&T syntax. Assembly language is a very low level language in which you have to comment each line, otherwise you may get lost. It involves communicating directly with the CPU of a computer, which makes the project that can be implemented in Python in say, 250 lines, be implemented in ~800 lines in Assembly language.\\\\ The secondary problem is that after parsing and processing the input accordingly, printing it out. The syscall operation corrupts the registers up until r12, and this can really be a pain in the neck as if you don't know details like these, you don't really know how to deal with the continuous segmentation faults you get.\\\\ The third problem is handling the constraints, but after you get used to the flow of it, the rest is very easy. The constraints are:\begin{itemize}
+    \item Input tokens are strictly separated by a single space.
+    \item The input line will contain at most 256 characters.
+    \item The first token (species) will be either \verb|Sparrow|, \verb|Warbler| or \verb|Nightingale|.
+    \item All subsequent tokens will be valid notes (\verb|C|, \verb|T|, \verb|D|) or operators (\verb|+|, \verb|-|, \verb|*|, \verb|H|).
+    \item There will be no leading or trailing spaces in the input line.
+    \item If an operator requires more notes than are currently available (e.g., merging two notes when only one is present), it will have no effect.
+    \item The expression is otherwise guaranteed to be well-formed.
+    \item Merged notes (e.g., \verb|C-T|) are not considered valid operands for any operation. You may safely assume such inputs will not occur.
+    \item Consecutive operations are allowed (e.g., \verb|C T * * *|) as long as they do not violate the above rules.
+\end{itemize}
+
+\section{Methodology}
+The approach used in the problem was pretty simple. Since the task does not require hardcore algorithmic thinking (as the time complexity is unimportant), I just implemented classic array-manipulation techniques and some memory tricks like BSS having adjacent elements.\\\\ I solved the main problem by looking up online and asking ChatGPT how to get input output and how to add/remove elements to an array in Assembly language. Contrary to what these sources recommended, I then implemented my own methods strictly using no call stack nor call and ret statements since it was told in the lecture jumps are enough. The pseudocode on how I handled these is below, at the \hyperref[sec:samplecode]{Sample Code} section.
+
+\section{Implementation}
+The implementation is simple. Take the line as input, parse it into tokens, process the parsed tokens (if it's a note, add it to the array; else, process it as an operator), and after each processed operator (even if it does nothing), print out the current generation until a newline is reached.
+
+\subsection{Code Structure}
+The structure of the code is, I avoided the use of call/ret as a whole to make things simpler. Everything is handled by jumps and "functions \& subfunctions" are merely labels to jump to. Down below are the implementations of reading input, processing an operator (Sparrow with + here), and printing the output.
+
+\subsection{Sample Code}
+\label{sec:samplecode}
+\begin{lstlisting}[style=ATnTStyle]
+_start: # main function
+
+leaq merge_buffer(%rip), %rax
+movq %rax, merge_buffer_pointer(%rip)
+leaq harmonize_buffer(%rip), %rax
+movq %rax, harmonize_buffer_pointer(%rip)
+
+
+movq $0, %rax # read mode
+movq $0, %rdi # open standard input
+leaq input_buffer(%rip), %rsi # load address of input_buffer to source input
+movq $256, %rdx # max number of characters to read
+syscall # read characters and put them to rax
+
+test %rax, %rax # invalid input, will never be reached
+jle tokenize_done
+
+movq %rax, %rcx # store number of bytes read in rcx
+leaq input_buffer(%rip), %rsi # load address of input_buffer to source input
+addq %rcx, %rsi # go to the end of read line
+movb $0, (%rsi) # null terminate the line
+
+leaq input_buffer(%rip), %rsi # load address of input_buffer to source input
+addq %rcx, %rsi # go to the end of read line
+decq %rsi # go before the null terminator we put
+movzbq (%rsi), %rax # load that character to rax
+cmpb $10, %al # is it newline?
+je strip_newline # if so strip it
+cmpb $13, %al # is it newline (unix systems)?
+jne parse_input # if not, skip stripping
+
+
+
+strip_newline: # function to strip newline from input line
+movb $0, (%rsi) # change newline to null terminator (lazy strip)
+
+
+
+parse_input: # input parser function
+xorq %rbx, %rbx # empty the token count
+leaq input_buffer(%rip), %rsi # load address of input_buffer to source input
+leaq token_array(%rip), %rdi # load address of input_buffer to destination input
+
+
+next_character: # subfunction to traverse the input line
+movzbq (%rsi), %rax # load contents of source input into rax
+cmpb $0, %al # end of line
+je tokenize_done
+
+cmpb $' ', %al # skip space before reading token
+je skip_space
+
+movq %rsi, (%rdi, %rbx, 8) # store current character pointer when a token starts
+incq %rbx # go to the next character (hence the name of the subfunction)
+
+
+read_token: # subfunction to read a token
+incq %rsi
+movzbq (%rsi), %rax # load next byte to rax
+cmpb $' ', %al # is it space?
+je terminate_token # if so terminate the token
+
+cmpb $0, %al # is it null terminator?
+je tokenize_done # if so we are done since we replaced newlines etc with null terminator
+
+jmp read_token # lazy while loop
+
+
+terminate_token: # subfunction to terminate a token
+movb $0, (%rsi) # overwrite the space with null terminator
+incq %rsi # go to next token
+jmp next_character # parse next token
+
+
+skip_space: # subfunction to skip spaces
+incq %rsi # go to the next token
+jmp next_character # parse next token
+
+
+tokenize_done: # function to parse the species
+leaq token_array(%rip), %r11
+movq %rbx, %r10
+shlq $3, %r10
+addq %r10, %r11
+movq $0, (%r11) # null terminate array
+
+movq token_array(%rip), %rsi # load the token array to source input
+movzbq (%rsi), %rax # get the first token into rax
+cmpb $'S', %al # first letter of Sparrow
+je case_sparrow # go to the specific marker function for that bird
+cmpb $'N', %al # first letter of Nightingale
+je case_nightingale # go to the specific marker function for that bird
+cmpb $'W', %al # first letter of Warbler
+je case_warbler # go to the specific marker function for that bird
+
+
+case_sparrow: # marker function for Sparrow
+movq $0, %r13 # the value for Sparrow is 0 (i picked it)
+jmp species_done # species part has been handled
+
+
+case_nightingale: # marker function for Nightingale
+movq $1, %r13 # the value for Nightingale is 1
+jmp species_done # species part has been handled
+
+
+case_warbler: # marker function for Warbler
+movq $2, %r13 # the value for Warbler is 2
+
+
+species_done: # function to parse other tokens
+movq $0, gen_count(%rip) # initialize generation counter
+movq $0, song_length(%rip) # initialize song length
+movq $1, %rbx # initialize token counter
+
+
+process_token: # function to process remaining tokens
+leaq token_array(%rip), %r11
+movq (%r11 ,%rbx ,8), %rsi
+cmpq $0, %rsi # is it a null terminator?
+je exit_evochirp # if so, exit the program
+
+movzbq (%rsi), %rax # get the token to rax to inspect it if its a note or an operator
+cmpb $'C', %al # if its a chirp note
+je add_note # process it
+cmpb $'T', %al # if its a trill note
+je add_note # process it
+cmpb $'D', %al # if its a deep call note
+je add_note # process it
+
+movb %al, %r9b # move operator to r9b for easier handling and debugging
+cmpb $'+', %r9b # if its a plus operator
+je handle_plus # process it
+cmpb $'-', %r9b # if its a minus operator
+je handle_minus # process it
+cmpb $'*', %r9b # if its a star operator
+je handle_star # process it
+cmpb $'H', %r9b # if its a harmony operator
+je handle_harmony # process it
+
+
+add_note: # function to append a note to the current sequence
+movq song_length(%rip), %rax # load the song length counter to rax
+leaq song_array(%rip), %rdx # load the address of next note to rdx
+movq %rax, %rcx # load the current song length to rcx
+shlq $3, %rcx # logical shift of 3 bits i.e. multiply by sizeof(pointer) = 8 to get the current index
+addq %rcx, %rdx # get the location in the song_array
+movq %rsi, (%rdx) # add the token (note) to that index
+incq song_length(%rip) # increment song length
+incq %rbx # increment token index
+jmp process_token # return to while loop
+
+-------------------------------------------------------------------------
+
+sparrow_plus: # plus operator handler for Sparrow interpreter
+movq song_length(%rip), %rax # load the song length counter to rax
+cmpq $2, %rax # are there enough notes?
+jl skip_operation # if not, do nothing
+
+movq song_length(%rip), %rcx # load the current song length to rcx
+decq %rcx # since we are merging two notes - 1st note
+leaq song_array(%rip), %rdx # load the song array into rdx
+movq (%rdx, %rcx, 8), %rdi # load the last note into destination input
+decq %rcx # since we are merging two notes - 2nd note
+movq (%rdx, %rcx, 8), %rsi # load the second last note into source input
+
+subq $2, song_length(%rip) # delete the last two notes since we are merging them
+
+movq merge_buffer_pointer(%rip), %rcx # load the merge buffer array into rcx
+movb (%rsi), %al # load contents of first character into al
+movb %al, (%rcx) # first character is the second last note
+movb $'-', 1(%rcx) # second character is the dash
+movb (%rdi), %al # load contents of last character into al
+movb %al, 2(%rcx) # last character is the last note
+movb $0, 3(%rcx) # null terminate the buffer
+
+movq song_length(%rip), %rax # load the song length counter to rax
+leaq song_array(%rip), %rdx # load the song array into rdx
+shlq $3, %rax # multiply by 8
+addq %rax, %rdx # go to the index of last note before the merged ones
+movq %rcx, (%rdx) # store the merged note at that index
+incq song_length(%rip) # increment the song length
+addq $4, merge_buffer_pointer(%rip) # increment merge buffer pointer
+jmp operation_done
+
+-------------------------------------------------------------------------
+
+print_gen: # function to print generations
+cmpq $0, %r13 # if its a Sparrow
+je print_sparrow # process it
+cmpq $1, %r13 # if its a Nightingale
+je print_nightingale # process it
+cmpq $2, %r13 # if its a Warbler
+je print_warbler # process it
+
+print_sparrow:
+leaq bird_sparrow(%rip), %rsi # load "Sparrow" to source input
+movq $7, %rdx # length of "Sparrow"
+jmp print_common
+
+print_nightingale:
+leaq bird_nightingale(%rip), %rsi # load "Nightingale" to source input
+movq $11, %rdx # length of "Nightingale"
+jmp print_common
+
+print_warbler:
+leaq bird_warbler(%rip), %rsi # load "Warbler" to source input
+movq $7, %rdx # length of "Warbler"
+jmp print_common
+
+print_common:
+movq $1, %rax # write mode
+movq $1, %rdi # standard output
+syscall # print
+
+leaq space(%rip), %rsi # put space to source input
+movq $1, %rdx # length of space
+movq $1, %rax
+movq $1, %rdi
+syscall # print it
+
+leaq gen_string(%rip), %rsi # put "Gen " to source input
+movq $4, %rdx # length of "Gen "
+movq $1, %rax
+movq $1, %rdi
+syscall # print it
+
+
+movq gen_count(%rip), %rax # load generation count to rax
+leaq number_buffer_end(%rip), %rcx # prepare for itoa operation
+xorq %r9, %r9 # empty r9 (we used it for operators before, now we use it for digit count)
+cmpq $0, %rax # gen 0 is a special case, we don't want DIV:0 errors
+jne itoa # go on with processing itoa operation
+decq %rcx # go to the last letter of number_buffer
+movb $'0', (%rcx) # make it '0'
+movq $1, %r9 # '0' has 1 digit
+jmp after_itoa
+
+itoa: # integer to ascii
+xorq %rdx, %rdx # empty rdx
+movq $10, %r10 # divisor is 10 for decimal numbers
+divq %r10 # now our quotient will go to rax and remainder to rdx
+addb $'0', %dl # convert remainder to ascii
+decq %rcx # go to the last letter of number_buffer
+movb %dl, (%rcx) # make it that digit
+incq %r9 # increment digit count
+cmpq $0, %rax # is the whole number processed?
+jne itoa
+
+after_itoa: # finish integer to ascii and print the gen number
+movq $1, %rax
+movq $1, %rdi
+movq %rcx, %rsi # pointer to first digit
+movq %r9, %rdx # string length is the number of digits
+syscall # print
+
+leaq colon_and_space(%rip), %rsi
+movq $2, %rdx
+movq $1, %rax
+movq $1, %rdi
+syscall # print ": "
+
+incq gen_count(%rip) # increment gen_count
+
+movq song_length(%rip), %r12 # move number of notes to r12
+xorq %r14, %r14 # empty the r14 register, will use as for loop index
+
+note_loop: # print the notes one by one
+cmpq %r12, %r14 # have we reached the end?
+jge after_notes # if so, terminate loop
+leaq song_array(%rip), %rdx # load song array to rdx
+movq (%rdx, %r14, 8), %rsi # move current note to source input
+
+xorq %r9, %r9 # empty the r9 register, will use as strlen
+strlen: # compute length of note to be printed
+movzbq (%rsi, %r9, 1), %rax # get the character at the nth index
+cmpb $0, %al # is it a null terminator?
+je after_strlen
+incq %r9 # keep traversing
+jmp strlen # loop
+
+after_strlen: # print the note
+movq $1, %rax
+movq $1, %rdi
+# implicit movq rsi to rsi here!
+movq %r9, %rdx # length of note
+syscall # print note
+
+leaq space(%rip), %rsi
+movq $1, %rdx
+movq $1, %rax
+movq $1, %rdi
+syscall # print space
+
+incq %r14 # increment loop index
+jmp note_loop # loop
+
+after_notes: # print newline and continue
+leaq new_line(%rip), %rsi
+movq $1, %rdx
+movq $1, %rax
+movq $1, %rdi
+syscall # print newline
+
+incq %rbx # increment token index for operators
+jmp process_token # loop back to process the next note / operator
+\end{lstlisting}
+
+\section{Results}
+The results were surprisingly accurate after fixing the truckload of segmentation fault errors :). Here are some challenging sample inputs and outputs I have tested my program with:\begin{itemize}
+    \item Input: "Warbler C D C T D C C T D D * * - H +"\\Output:\\Warbler Gen 0: C D C T D C C T D D D D\\Warbler Gen 1: C D C T D C C T D D D D D D\\Warbler Gen 2: C D C T D C C T D D D D D\\Warbler Gen 3: C D C T D C C T D D D D D T\\Warbler Gen 4: C D C T D C C T D D D D T-C
+    \item Input: "Nightingale C D T T D D C C C - - + * H"\\Output:\\Nightingale Gen 0: C D T T D D C C\\Nightingale Gen 1: C D T T D D C\\Nightingale Gen 2: C D T T D D C D C\\Nightingale Gen 3: C D T T D D C D C C D T T D D C D C\\Nightingale Gen 4: C D T T D D C D C C D T T D D C-C D-C
+    \item Input: "Sparrow C C C C C C D D D D D D - * * H D T +"\\Output:\\Sparrow Gen 0: C C C C C D D D D D D\\Sparrow Gen 1: C C C C C D D D D D D D\\Sparrow Gen 2: C C C C C D D D D D D D D\\Sparrow Gen 3: T T T T T D-T D-T D-T D-T D-T D-T D-T D-T\\Sparrow Gen 4: T T T T T D-T D-T D-T D-T D-T D-T D-T D-T D-T
+\end{itemize}
+
+\section{Discussion}
+Performance was excellent compared to any other project I've done in my academic life, thanks to Assembly language. I didn't really experience any limitation other than the number of registers not being enough sometimes when syscalling (because of the clobbering of registers <r12 caused by the syscall).\\\\ A possible improvement would be to stick with one type of implementation when manipulating arrays, as I used shlq and movq to do pointer arithmetic in some of my functions, but I used addq and offset in others. As I documented clearly what I've done in each line, I used this approach merely to improve my own Assembly language skills and it does not really cause any drawbacks readability-wise.
+
+\section{Conclusion}
+The project was an excellent way of learning Assembly language, especially AT\&T syntax. The task was really easy (as it can be implemented in Python sub 2 hours I would bet), the hard part was to do it using Assembly language.\\\\ As I've said, a future enhancement would be to improve the algorithm of the program and maybe make it accept multiple lines as input.\\\\ Who knows, maybe I can create an R2-D2 in real life by combining some scrap parts, an AI assistant, and Evochirp. :)
+
+\section*{AI Assistants}
+The two AI assistants I've used in this project were ChatGPT and DeepSeek R1. Note that I did not copy and paste any AI-generated code anywhere in my implementation and implemented the whole project myself (hence the inconsistencies :)). How I utilized them can be listed as:\begin{itemize}
+    \item I asked for ChatGPT's help for taking and parsing an input line in Assembly language, with also some insights on how to use syscalls for input and output.
+    \item I asked for DeepSeek R1's help when debugging segmentation faults and learned that syscalling may corrupt the contents of the registers <r12. This saved literally hours of my work.
+    \item I asked for ChatGPT's help on how to do pointer arithmetic on Assembly language and how to add/remove certain elements of an array doing that.
+    \item I used ChatGPT to help write a listings package that colors the sample code on Overleaf with respect to Assembly language.
+\end{itemize}
+\end{document}
